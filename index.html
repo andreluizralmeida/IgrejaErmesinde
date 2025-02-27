@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Questionário de Dons Espirituais</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      background-color: #f8f9fa;
+    }
+    h1, h2 { text-align: center; }
+    
+    .question { 
+      background: white; 
+      padding: 15px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 10px;
+    }
+    .options label {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      font-size: 18px;
+      gap: 10px;
+    }
+    .options input {
+      width: 24px;
+      height: 24px;
+    }
+    .button-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      font-weight: bold;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 80%;
+      max-width: 400px;
+      text-align: left;
+      position: relative;
+    }
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      color: red;
+      font-size: 24px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Questionário de Dons Espirituais</h1>
+  <h2>Igreja adventista de Ermesinde</h2>
+  <div class="button-container">
+    <button onclick="openModal('instructionsModal')">Instruções</button>
+  </div>
+  <form id="quizForm">
+    <div id="questions"></div>
+    <div class="button-container">
+      <button type="button" onclick="calculateResults()">Calcular Resultados</button>
+      <button type="button" onclick="confirmReset()">Zerar Tudo</button>
+    </div>
+  </form>
+  <div id="results" class="result"></div>
+
+  <!-- Modal de Instruções -->
+  <div id="instructionsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('instructionsModal')">&times;</span>
+      <h2>Instruções</h2>
+      <p>Marque <strong>0</strong> se a resposta é totalmente falsa.<br>
+         Marque <strong>1</strong> se a resposta é em grande parte falsa.<br>
+         Marque <strong>2</strong> se a resposta é parcialmente falsa ou verdadeira.<br>
+         Marque <strong>3</strong> se a resposta é em grande parte verdadeira.<br>
+         Marque <strong>4</strong> se a resposta é totalmente verdadeira.<br><br>
+
+         Responda com calma e com espórito de oração. 🙏<br><br>
+
+         É <strong>obrigatório</strong> responder todas as perguntas para revelar o resultado. <br><br> 
+
+         Caso resolva responder depois, as respontas continuarão aqui. </p>
+    </div>
+  </div>
+  
+  <!-- Modal de Alerta -->
+  <div id="alertModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('alertModal')">&times;</span>
+      <h2>Atenção</h2>
+      <p id="alertMessage"></p>
+    </div>
+  </div>
+  
+  <!-- Modal de Confirmação para Zerar Tudo -->
+  <div id="confirmResetModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('confirmResetModal')">&times;</span>
+      <h2>Confirmar apagar Tudo</h2>
+      <p>Tem certeza que deseja apagar todas as respostas?</p>
+      <div class="button-container">
+        <button type="button" onclick="resetAll()">Sim</button>
+        <button type="button" onclick="closeModal('confirmResetModal')">Não</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Carrega as respostas salvas do Local Storage, se existirem.
+    let responses = {};
+    const storedResponses = localStorage.getItem("quizResponses");
+    if (storedResponses) {
+      responses = JSON.parse(storedResponses);
+    }
+
+    // Exemplo com 3 perguntas (substitua pelos 125 reais)
+    const questions = [
+        'Gostaria de falar com as pessoas e apresentar-lhes a vontade de Deus',
+        'Gosta quando lhe pedem para fazer trabalhos manuais especiais em sua igreja?',
+        'Compreende em detalhes as doutrinas bíblicas da igreja?',
+        'Sente-se capaz de consolar alguém que está perplexo ou sofrendo?',
+        'Administra bem o seu dinheiro de modo que pode dar liberalmente à causa de Deus?',
+        'Gosta de estar entre as pessoas e participar de suas atividades?',
+        'Sente compaixão e trata de ajudar a viciados, sozinhos, etc .?',
+        'Descobre facilmente novas verdades por si mesmo?',
+        'É fácil para você escolher entre as diferentes alternativas bíblicas para problemas complicados?',
+        'Crê firmemente nas promessas divinas?',
+        'Sente compaixão pelos que sofrem enfermidades?',
+        'Deus responde suas orações de maneira sobrenatural?',
+        'Percebe claramente a diferença entre a verdade e o erro?',
+        'Tem orado secretamente em algum idioma desconhecido para você?',
+        'Tem declarado em seu próprio idioma alguma mensagem que foi dada em um idioma desconhecido para você?',
+        'Sente-se chamado por Deus para ser responsável pelo cuidado e liderança do povo de Deus?',
+        'Gosta de ajudar os dirigentes para que eles possam dedicar mais tempo a assuntos essenciais?',
+        'Gosta de solucionar problemas complicados da igreja?',
+        'Gosta de compartilhar com outros a Palavra de Deus?',
+        'Gosta da ideia de visitar os irmãos regularmente?',
+        'Agrada-lhe a ideia de ficar sem casar para dedicar todo o seu tempo à igreja?',
+        'Interessa-se em procurar e descobrir pessoas que não tem comida ou casa?',
+        'Adapta-se facilmente a outras culturas?',
+        'Perde a noção do tempo quando ora?',
+        'Sente que sua fé é suficientemente forte para poder expulsar o diabo de algum possesso?',
+        'Sente que pode fortalecer e animar os desanimados?',
+        'Gosta de participar da ordem e limpeza de sua igreja?',
+        'Gosta de ler comentários bíblicos e estudar a fundo passagens difíceis da Bíblia?',
+        'As pessoas o procuram para se aconselhar a respeito de seus problemas?',
+        'Dá com muita liberalidade objetos ou dinheiro para a igreja?',
+        'Gosta de planejar atividades para a igreja e realizá-las?',
+        'É sensível às necessidades dos idosos e deficientes e procura ajudá-los de alguma maneira?',
+        'Gosta de procurar soluções para problemas complicados?',
+        'Estuda e lê bastante para aprender verdades bíblicas?',
+        'Sente-se seguro em conhecer a vontade específica de Deus para o futuro de Sua obra, mesmo quando outros hesitam?',
+        'Sente-se inclinado a orar pelos enfermos?',
+        'Crê que no nome de Deus, mediante a fé e a oração você é capaz de alterar a ordem natural das coisas?',
+        'Pode discernir os motivos que movem as pessoas?',
+        'Sente a necessidade de dar alguma mensagem à igreja em um idioma não conhecido por você?',
+        'Já experimentou alguma vez entender algum idioma não conhecido por você?',
+        'É capaz de iniciar uma nova obra ou consolidar alguma já existente?',
+        'Gosta de ajudar no escritório do pastor?',
+        'Pode predizer com exatidão o resultado de suas decisões?',
+        'Sente-se à vontade ao pedir a alguém que aceite a Jesus?',
+        'Acha que gostaria de visitar os interessados da igreja e estudar a Bíblia com eles?',
+        'É fácil para você controlar as inclinações diante do sexo oposto?',
+        'Alegra-se quando alguém o visita e pede para ficar alguns dias em sua casa?',
+        'Sente-se a vontade entre as pessoas de outra raça ou nacionalidade?',
+        'Toma os pedidos de oração com muita seriedade e ora por eles em seu lar?',
+        'Não tem medo da ideia de estar frente a frente com um endemoninhado?',
+        'Tem costume de admoestar outros, produzindo correção e arrependimento?',
+        'Sente satisfação ao realizar trabalhos domésticos na casa do Senhor?',
+        'Gosta de partilhar com outros suas descobertas ou seu entendimento da Palavra de Deus?',
+        'Acha fácil aplicar os princípios bíblicos aos problemas?',
+        'Gosta de animar a outros para que deem com liberalidade?',
+        'Sente-se a vontade ao delegar responsabilidade a outros?',
+        'Gostaria de pertencer ao grupo "Ministério dos Encarcerados"?',
+        'É fácil para você entender as verdades bíblicas que são difíceis para outros?',
+        'Sente-se seguro de conhecer a vontade de Deus para o progresso da obra?',
+        'Confia plenamente no poder de Deus durante situações dificeis?',
+        'Em nome de Deus, você se sente capaz de curar enfermos?',
+        'Sua vida está em tal relacionamento com Deus que Ele pode usá-lo para realizar atos sobrenaturais?',
+        'Sabe quando uma pessoa é influenciada por Deus ou pelo diabo?',
+        'Já falou em algum idioma desconhecido por você?',
+        'Tem desejo de poder interpretar alguma mensagem apresentada em algum idioma desconhecido por você?',
+        'Você é consultado por outros irmãos a respeito de problemas eclesiásticos ou doutrinários?',
+        'Preocupa-se com os necessitados e procura satisfazer suas necessidades?',
+        'Sente-se capaz de desenvolver planos e leva-los a bom termo?',
+        'Prefere dedicar seu tempo livre a pregar o evangelho?',
+        'Gostaria de ocupar o púlpito todas as semanas?',
+        'Acredita que não perderia uma bênção se ficasse sem casar?',
+        '"Minha casa é sua casa". Este é o seu lema prático?',
+        'Aprecia a vida em um país estrangeiro?',
+        'Gosta de orar pela igreja e o faz constantemente?',
+        'Gostaria de enfrentar o demônio cara a cara e dominá-lo em nome de Jesus?',
+        'Tem se sentido impressionado com mensagens especiais as quais você transmite sem se importar com as consequências?',
+        'Está pronto para obedecer ordens, em vez de dá-las?',
+        'Sente-se capaz de explicar a outros claramente os ensinos biblicos?',
+        'Anima aos inconstantes e desanimados?',
+        'Sente-se comovido a procura fazer algo quando a igreja necessita de ajuda financeira?',
+        'Sente que sua influência afeta a outros para trabalhar pelo Senhor?',
+        'É impossível para você passar por alto algum esmoler?',
+        'Você acha fácil apresentar alternativas sem tomar posições?',
+        'Domina completamente as verdades biblicas?',
+        'Geralmente não se desanima quando as coisas não vão bem?',
+        'Você ora de tal maneira que os doentes se sentem melhor?',
+        'Você já realizou algum milagre pelo poder de Deus?',
+        'Pode reconhecer os dons espirituais nos demais?',
+        'A ideia de poder falar em línguas o atrai?',
+        'Acredita que os dons de línguas e interpretação são realmente necessários nestes dias para a proclamação do evangelho?',
+        'São suas opiniões tomadas a sério e seguidas pelo resto dos irmãos?',
+        'Gosta de distribuir literatura, revistas, folhetos, etc .?',
+        'Prefere presidir reuniões e apresentar alvos em vez de ser só um participante?',
+        'Sente o desejo de falar com incrédulos a finalidade de ganha-los?',
+        'Fica emocionado com a ideia de poder ser o pastor da igreja?',
+        'Acha que se você se casasse, sua família seria um estorvo em seu ministério em vez de uma bênção?',
+        'Gosta de cumprimentar os visitantes da igreja e convidá-los a comer e/ou dormir em sua casa, se for necessário?',
+        'Sente a necessidade de ser um pregador em outros paises?',
+        'É a oração seu exercício espiritual favorito?',
+        'Já utilizou o poder de Deus para expulsar o demônio de alguma pessoa?',
+        'É o progresso geral da obra e a satisfação das necessidades dos irmãos a grande obsessão de sua vida?',
+        'Sente alegria e satisfação quando poder servir a alguém?',
+        'Prefere ensinar que ser ajudante, e seus alunos praticam seus ensinos?',
+        'Sente o desejo de chamar a atenção dos que estão procedendo mal?',
+        'Você é capaz de ganhar muito dinheiro para a causa de Deus?',
+        'Sente-se capaz de recrutar cristãos e pô-los para trabalhar?',
+        'Percorre facilmente a segunda milha e/ou oferece a outra face?',
+        'Os dirigentes e líderes geralmente buscam seus conselhos, você lhes mostra os planos que devem seguir, os quais regularmente dão certo?',
+        'Você é procurado pelos demais irmãos para responder suas perguntas?',
+        'Entre as graças cristãs, a fé é a sua favorita?',
+        'Preocupa-se com a saúde física de seus semelhantes?',
+        'Alguma vez já sentiu o desejo ou a inclinação de pedir a Deus que efetue algum ato sobrenatural para proveito de outro, crendo que Deus atenderá seu pedido?',
+        'Percebe a presença do mal antes que seja evidente?',
+        'O dom de línguas é atualmente necessário para a edificação do corpo de Cristo?',
+        'Acha que é necessário ou benéfico para a igreja apresentar mensagens em idiomas desconhecidos e interpretá-los?',
+        'Sente que é seu dever chamar a atenção de algum administrador que não está agindo bem?',
+        'Prefere ser ajudante e não o professor de uma classe biblica?',
+        'Sente-se capacitado para presidir ou supervisionar os irmãos?',
+        'Entende claramente os passos que levam uma pessoa à salvação?',
+        'Gostaria de organizar, planejar e supervisionar todas as atividades da igreja?',
+        'Considera-se capaz de ficar sem casar sem passar por tentações?',
+        'Tem, de maneira regular, hóspedes em sua mesa, principalmente aos sábados?',
+        'Ou para sempre, gostaria de pregar o evangelho em outros paises?',
+        'Deus responde suas orações frequentemente de maneira tangível?',
+        'Sente-se atraído a situações onde há endemoninhados e é procurado para expulsar o demônio pelo uso que você faz do poder de Deus?',
+    ];
+    
+    const gifts = {
+      "Profecia": [1, 26, 51, 76, 101],
+      "Serviço": [2, 27, 52, 77, 102],
+      "Ensino": [3, 28, 53, 78, 103],
+      "Exortação": [4, 29, 54, 79, 104],
+      "Dádivas": [5, 30, 55, 80, 105],
+      "Liderança": [6, 31, 56, 81, 106],
+      "Misericórdia": [7, 32, 57, 82, 107],
+      "Sabedoria": [8, 33, 58, 83, 108],
+      "Conhecimento": [9, 34, 59, 84, 109],
+      "Fé": [10, 35, 60, 85, 110],
+      "Curas": [11, 36, 61, 86, 111],
+      "Milagres": [12, 37, 62, 87, 112],
+      "Discernimento": [13, 38, 63, 88, 113],
+      "Linguas": [14, 39, 64, 89, 114],
+      "Interpretação": [15, 40, 65, 90, 115],
+      "Apostolado": [16, 41, 66, 91, 116],
+      "Ajudas": [17, 42, 67, 92, 117],
+      "Administração": [18, 43, 68, 93, 118],
+      "Evangelismo": [19, 44, 69, 94, 119],
+      "Pastorado": [20, 45, 70, 95, 120],
+      "Celibato": [21, 46, 71, 96, 121],
+      "Hospitalidade": [22, 47, 72, 97, 122],
+      "Missionário": [23, 48, 73, 98, 123],
+      "Intercessão": [24, 49, 74, 99, 124],
+      "Exorcismo": [25, 50, 75, 100, 125]
+    };
+
+    // Renderiza as perguntas e carrega as respostas salvas, se houver.
+    function renderQuestions() {
+      const container = document.getElementById("questions");
+      container.innerHTML = "";
+      questions.forEach((q, index) => {
+        // Adiciona um id único para cada pergunta para facilitar a âncora.
+        let html = `<div class="question" id="question-${index + 1}">
+          <p>${index + 1}. ${q}</p>
+          <div class="options">`;
+        for (let i = 0; i <= 4; i++) {
+          let checked = "";
+          if (responses[index + 1] !== undefined && responses[index + 1] === i) {
+            checked = "checked";
+          }
+          html += `<label><input type="radio" name="q${index + 1}" value="${i}" ${checked} onchange="saveResponse(${index + 1}, ${i})"> ${i}</label>`;
+        }
+        html += `</div></div>`;
+        container.innerHTML += html;
+      });
+    }
+
+    // Salva a resposta de uma pergunta no Local Storage.
+    function saveResponse(questionNumber, value) {
+      responses[questionNumber] = value;
+      localStorage.setItem("quizResponses", JSON.stringify(responses));
+    }
+
+    // Valida as respostas e, se todas estiverem preenchidas, calcula os resultados.
+    function calculateResults() {
+      let missingQuestions = [];
+      questions.forEach((q, index) => {
+        let checked = document.querySelector(`input[name="q${index + 1}"]:checked`);
+        if (!checked) missingQuestions.push(index + 1);
+      });
+
+      if (missingQuestions.length > 0) {
+        document.getElementById("alertMessage").innerHTML = "Por favor, responda as seguintes perguntas: " + missingQuestions.join(", ");
+        openModal("alertModal");
+        // Rola suavemente até a primeira pergunta faltante
+        document.getElementById("question-" + missingQuestions[0]).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      
+      let scores = {};
+      for (let gift in gifts) {
+        scores[gift] = 0;
+        gifts[gift].forEach(qNumber => {
+          if (responses[qNumber] !== undefined) {
+            scores[gift] += parseInt(responses[qNumber]);
+          }
+        });
+      }
+
+      let sortedGifts = Object.entries(scores).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      let resultHTML = "<h2>Top 5 Dons Espirituais:</h2>";
+      sortedGifts.forEach(g => {
+        resultHTML += `<p>${g[0]}: ${g[1]} pontos</p>`;
+      });
+      document.getElementById("results").innerHTML = resultHTML;
+    }
+
+    // Funções para abrir e fechar modais.
+    function openModal(id) {
+      document.getElementById(id).style.display = "flex";
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = "none";
+    }
+
+    // Abre o modal de confirmação para resetar tudo.
+    function confirmReset() {
+      openModal("confirmResetModal");
+    }
+
+    // Reseta todas as respostas e limpa o Local Storage.
+    function resetAll() {
+      responses = {};
+      localStorage.removeItem("quizResponses");
+      renderQuestions();
+      document.getElementById("results").innerHTML = "";
+      closeModal("confirmResetModal");
+    }
+
+    renderQuestions();
+  </script>
+</body>
+</html>
