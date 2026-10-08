@@ -81,6 +81,14 @@
       font-size: 24px;
       cursor: pointer;
     }
+    .email-field {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      font-size: 16px;
+      margin: 12px 0;
+    }
   </style>
 </head>
 <body>
@@ -98,6 +106,9 @@
     </div>
   </form>
   <div id="results" class="result"></div>
+  <div id="emailAction" class="button-container" hidden>
+    <button type="button" onclick="openModal('emailModal')">Enviar por e-mail</button>
+  </div>
 
   <!-- Modal de Instruções -->
   <div id="instructionsModal" class="modal">
@@ -136,6 +147,19 @@
       <div class="button-container">
         <button type="button" onclick="resetAll()">Sim</button>
         <button type="button" onclick="closeModal('confirmResetModal')">Não</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para envio dos resultados por e-mail -->
+  <div id="emailModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('emailModal')">&times;</span>
+      <h2>Enviar resultados</h2>
+      <label for="recipientEmail">E-mail do destinatário</label>
+      <input id="recipientEmail" class="email-field" type="email" autocomplete="email" required>
+      <div class="button-container">
+        <button type="button" onclick="sendResultsByEmail()">Enviar</button>
       </div>
     </div>
   </div>
@@ -364,6 +388,31 @@
         resultHTML += `<p>${g[0]}: ${g[1]} pontos</p>`;
       });
       document.getElementById("results").innerHTML = resultHTML;
+      document.getElementById("emailAction").hidden = false;
+      window.latestResults = sortedGifts;
+    }
+
+    function sendResultsByEmail() {
+      const recipientEmail = document.getElementById("recipientEmail").value.trim();
+      const emailInput = document.getElementById("recipientEmail");
+
+      if (!emailInput.checkValidity() || !window.latestResults) {
+        emailInput.reportValidity();
+        return;
+      }
+
+      const resultLines = window.latestResults.map(([gift, score]) => `${gift}: ${score} pontos`);
+      const subject = "Resultado do Questionário de Dons Espirituais";
+      const body = [
+        "Resultado do Questionário de Dons Espirituais",
+        "Igreja Adventista de Ermesinde",
+        "",
+        "Top 5 Dons Espirituais:",
+        ...resultLines
+      ].join("\n");
+
+      window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      closeModal("emailModal");
     }
 
     // Funções para abrir e fechar modais.
@@ -386,6 +435,8 @@
       localStorage.removeItem("quizResponses");
       renderQuestions();
       document.getElementById("results").innerHTML = "";
+      document.getElementById("emailAction").hidden = true;
+      window.latestResults = null;
       closeModal("confirmResetModal");
       document.getElementById("question-1").scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
